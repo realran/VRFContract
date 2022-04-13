@@ -8,9 +8,6 @@ import "../VRFConsumerBaseV2.sol";
 contract VRFv2Consumer is VRFConsumerBaseV2 {
   VRFCoordinatorV2 COORDINATOR;
 
-  // see https://docs.chain.link/docs/vrf-contracts/#configurations
-  address vrfCoordinator = 0xF96E9BB20348c467C0C31DA55d66eC9C0f7A92C1;
-
   // The gas lane to use, which specifies the maximum gas price to bump to.
   // For a list of available gas lanes on each network,
   // see https://docs.chain.link/docs/vrf-contracts/#configurations
@@ -37,7 +34,7 @@ contract VRFv2Consumer is VRFConsumerBaseV2 {
   uint256 public s_requestId;
   address s_owner;
 
-  constructor(uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) {
+  constructor(address vrfCoordinator, uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) {
     COORDINATOR = VRFCoordinatorV2(vrfCoordinator);
     s_owner = msg.sender;
     s_subscriptionId = subscriptionId;
