@@ -13,10 +13,6 @@ contract VRFCoordinatorV2 is
   TypeAndVersionInterface,
   VRFCoordinatorV2Interface
 {
-  // LinkTokenInterface public immutable LINK;
-  // AggregatorV3Interface public immutable LINK_ETH_FEED;
-  // BlockhashStoreInterface public immutable BLOCKHASH_STORE;
-
   // We need to maintain a list of consuming addresses.
   // This bound ensures we are able to loop over them as needed.
   // Should a user require more consumers, they can use multiple subscriptions.
@@ -27,7 +23,6 @@ contract VRFCoordinatorV2 is
   error MustBeSubOwner(address owner);
   error PendingRequestExists();
   error MustBeRequestedOwner(address proposedOwner);
-  event FundsRecovered(address to, uint256 amount);
   // We use the subscription struct (1 word)
   // at fulfillment time.
   struct Subscription {
@@ -63,7 +58,6 @@ contract VRFCoordinatorV2 is
   // sent tokens using transfer and so we may need to use recoverFunds.
   uint96 private s_totalBalance;
   event SubscriptionCreated(uint64 indexed subId, address owner);
-  event SubscriptionFunded(uint64 indexed subId, uint256 oldBalance, uint256 newBalance);
   event SubscriptionConsumerAdded(uint64 indexed subId, address consumer);
   event SubscriptionConsumerRemoved(uint64 indexed subId, address consumer);
   event SubscriptionCanceled(uint64 indexed subId, address to, uint256 amount);
@@ -76,11 +70,9 @@ contract VRFCoordinatorV2 is
   uint32 public constant MAX_NUM_WORDS = 500;
   // 5k is plenty for an EXTCODESIZE call (2600) + warm CALL (100)
   // and some arithmetic operations.
-  uint256 private constant GAS_FOR_CALL_EXACT_CHECK = 5_000;
+  // uint256 private constant GAS_FOR_CALL_EXACT_CHECK = 5_000;
   error InvalidRequestConfirmations(uint16 have, uint16 min, uint16 max);
   error NumWordsTooBig(uint32 have, uint32 want);
-  error ProvingKeyAlreadyRegistered(bytes32 keyHash);
-  error NoSuchProvingKey(bytes32 keyHash);
   error InvalidLinkWeiPrice(int256 linkWei);
   error Reentrant();
   struct RequestCommitment {
@@ -93,12 +85,8 @@ contract VRFCoordinatorV2 is
   mapping(bytes32 => address) /* keyHash */ /* oracle */
     private s_provingKeys;
   bytes32[] private s_provingKeyHashes;
-  mapping(address => uint96) /* oracle */ /* LINK balance */
-    private s_withdrawableTokens;
   mapping(uint256 => bytes32) /* requestID */ /* commitment */
     private s_requestCommitments;
-  event ProvingKeyRegistered(bytes32 keyHash, address indexed oracle);
-  event ProvingKeyDeregistered(bytes32 keyHash, address indexed oracle);
   event RandomWordsRequested(
     bytes32 indexed keyHash,
     uint256 requestId,
@@ -151,45 +139,6 @@ contract VRFCoordinatorV2 is
 
   constructor(
   ) ConfirmedOwner(msg.sender) {
-  }
-
-  /**
-   * @notice Registers a proving key to an oracle.
-   * @param oracle address of the oracle
-   * @param publicProvingKey key that oracle can use to submit vrf fulfillments
-   * PlatON版本无需此步骤，但为了兼容chainlink用户，保留此方法
-   */
-  function registerProvingKey(address oracle, uint256[2] calldata publicProvingKey) external onlyOwner {
-    bytes32 kh = hashOfKey(publicProvingKey);
-    if (s_provingKeys[kh] != address(0)) {
-      revert ProvingKeyAlreadyRegistered(kh);
-    }
-    s_provingKeys[kh] = oracle;
-    s_provingKeyHashes.push(kh);
-    emit ProvingKeyRegistered(kh, oracle);
-  }
-
-  /**
-   * @notice Deregisters a proving key to an oracle.
-   * @param publicProvingKey key that oracle can use to submit vrf fulfillments
-   * PlatON版本无需此步骤，但为了兼容chainlink用户，保留此方法
-   */
-  function deregisterProvingKey(uint256[2] calldata publicProvingKey) external onlyOwner {
-    bytes32 kh = hashOfKey(publicProvingKey);
-    address oracle = s_provingKeys[kh];
-    if (oracle == address(0)) {
-      revert NoSuchProvingKey(kh);
-    }
-    delete s_provingKeys[kh];
-    for (uint256 i = 0; i < s_provingKeyHashes.length; i++) {
-      if (s_provingKeyHashes[i] == kh) {
-        bytes32 last = s_provingKeyHashes[s_provingKeyHashes.length - 1];
-        // Copy last element and overwrite kh to be deleted with it
-        s_provingKeyHashes[i] = last;
-        s_provingKeyHashes.pop();
-      }
-    }
-    emit ProvingKeyDeregistered(kh, oracle);
   }
 
   /**
@@ -313,25 +262,6 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @notice Recover link sent with transfer instead of transferAndCall.
-   * @param to address to send link to
-   * PlatON版本去掉了所有费用的计算
-   */
-  function recoverFunds(address to) external onlyOwner {
-    // uint256 externalBalance = LINK.balanceOf(address(this));
-    // uint256 internalBalance = uint256(s_totalBalance);
-    // if (internalBalance > externalBalance) {
-    //   revert BalanceInvariantViolated(internalBalance, externalBalance);
-    // }
-    // if (internalBalance < externalBalance) {
-    //   uint256 amount = externalBalance - internalBalance;
-    //   LINK.transfer(to, amount);
-    //   emit FundsRecovered(to, amount);
-    // }
-    // If the balances are equal, nothing to be done.
-  }
-
-  /**
    * @inheritdoc VRFCoordinatorV2Interface
    */
   function getRequestConfig()
@@ -446,7 +376,7 @@ contract VRFCoordinatorV2 is
     // The consequence for users is that they can send requests
     // for invalid keyHashes which will simply not be fulfilled.
     uint64 nonce = currentNonce + 1;
-    (uint256 requestId, uint256 preSeed) = computeRequestId(keyHash, msg.sender, subId, nonce);
+    (uint256 requestId, ) = computeRequestId(keyHash, msg.sender, subId, nonce);
 
     s_requestCommitments[requestId] = keccak256(
       abi.encode(requestId, block.number, subId, callbackGasLimit, numWords, msg.sender)
@@ -515,23 +445,6 @@ contract VRFCoordinatorV2 is
       success := call(gas(), target, 0, add(data, 0x20), mload(data), 0, 0)
     }
     return success;
-  }
-
-  /*
-   * @notice Oracle withdraw LINK earned through fulfilling requests
-   * @param recipient where to send the funds
-   * @param amount amount to withdraw
-   * 扣费函数，无需实现
-   */
-  function oracleWithdraw(address recipient, uint96 amount) external nonReentrant {
-    // if (s_withdrawableTokens[msg.sender] < amount) {
-    //   revert InsufficientBalance();
-    // }
-    // s_withdrawableTokens[msg.sender] -= amount;
-    // s_totalBalance -= amount;
-    // if (!LINK.transfer(recipient, amount)) {
-    //   revert InsufficientBalance();
-    // }
   }
 
   function getCurrentSubId() external view returns (uint64) {
