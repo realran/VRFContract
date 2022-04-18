@@ -1,23 +1,27 @@
 # VRFContract
-PlatON 内置合约（合约地址：0x3000000000000000000000000000000000000001）为用户提供生成 VRF 随机数功能。本仓库的 Solidity 合约参考 Chainlink VRF 的用法，封装了对内置合约的调用，同时尽可能让合约的整个调用过程和 Chainlink 保持一致，方便用户把基于 Chainlink VRF 的业务快速迁移到 PlatON VRF上。
+PlatON built-in contract (contract address: 0x30000000000000000000000000000000000001) generates VRF random numbers for users. The Solidity contracts in this repository refer to the usage of Chainlink VRF, encapsulate the invocation of built-in contracts, and at the same time make the entire invocation process of the contract consistent with Chainlink, so that users can quickly migrate Chainlink VRF-based services to PlatON VRF.
 
-# 合约概述
+# Contract Overview
 
 ## VRF.sol
-VRF 合约通过 delegatecall 方式直接调用 PlatON 内置合约并返回随机数列表。如果用户当前业务不涉及 Chainlink VRF 流程，可直接部署该合约使用。
+The VRF contract directly calls the PlatON built-in contract through delegatecall and returns a list of random numbers. If the user's current business does not involve the Chainlink VRF process, the contract can be deployed directly.
 
 ## VRFCoordinatorV2.sol
-Coordinator 合约参考 Chainlink VRF 相关合约，提供订阅管理和 Consumer 合约注册功能，方便 Consumer 合约接入使用 VRF 功能。和 Chainlink VRF 不同的是，该 Coordinator 合约为用户提供了同步获取随机数和异步获取随机数两种方式，且取消了 Link Token 相关费用的结算。
+The Coordinator contract refers to Chainlink VRF related contracts, and provides subscription management and Consumer contract registration functions, which is convenient for Consumer contracts to access and use VRF functions. Different from Chainlink VRF, the Coordinator contract provides users with two ways to obtain random numbers, i.e. the synchronous and the asynchronous, and cancels the settlement of Link Token related fees.
 
 ## VRFv2Consumer.sol
-该合约提供了Consumer 合约模板，用户可参考该合约调用 Coordinator 合约获取随机数，并使用返回的随机数进行业务处理。
+The contract provides a Consumer contract template, to which users can refer to call the Coordinator contract to obtain random numbers for business processing.
 
-# 合约使用
+# Contract Usage
 
-1. 部署 VRFCoordinatorV2 合约，返回合约地址 vrfCoordinatorAddress
-2. 在 VRFCoordinatorV2 中创建 Subscription，返回订阅 SubId
-3. 部署 VRFv2Consumer 合约，构造函数参数传入 vrfCoordinatorAddress 和 SubId，返回合约地址 consumerAddress
-4. 向 VRFCoordinatorV2 注册 Consumer 合约，参数传入 SubId 和 consumerAddress
-5. 调用 Consumer 合约的 syncRequestRandomWords 方法同步获取随机数列表
-6. 调用 Consumer 合约的 requestRandomWords 方法异步请求 VRF 随机数，生成的随机数通过回调函数 fulfillRandomWords 返回
+1. Deploy the VRCoordinatorV2 contract and the contract address vrfCoordinatorAddress is returned.
 
+2. Create a Subscription in VRCoordinatorV2 and the subscription SubId is returned.
+
+3. Deploy the VRFv2Consumer contract, pass in vrfCoordinatorAddress and SubId as the constructor parameters, and the contract address consumerAddress is returned.
+
+4. Register the Consumer contract with VRCoordinatorV2, pass in SubId and consumerAddress as parameters.
+
+5. Call the syncRequestRandomWords method of the Consumer contract to obtain a list of random numbers synchronously.
+
+6. Call the requestRandomWords method of the Consumer contract to asynchronously request VRF random numbers, and the generated random numbers are returned by the callback function fulfillRandomWords.
