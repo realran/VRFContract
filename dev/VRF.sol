@@ -2,21 +2,21 @@
 pragma solidity ^0.8.0;
 
 /**
- * 调用PlatON内置合约生成VRF随机数
+ * Call PlatON built-in contract to generate VRF random number
  */
 contract VRF {
 
   error InvalidRandomWords(uint32 numWords, uint256 returnValueLength);
 
-  // VrfInnerContract 内置合约地址
+  // VrfInnerContract addresss
   address vrfInnerContractAddr = 0x3000000000000000000000000000000000000001;
 
-  // 32个字节表示uint256
+  // 32 bytes for uint256
   uint32 base = 32;
 
   /**
-   * 调用 VrfInnerContract 内置合约生成VRF随机数
-   * @param numWords 随机数的个数
+   * Call VrfInnerContract built-in contract to generate VRF random numbers
+   * @param numWords number of random numbers
    */
   function requestRandomWords(uint32 numWords) internal returns (uint256[] memory) {
     bytes memory data = abi.encode(numWords);
@@ -39,9 +39,9 @@ contract VRF {
   }
 
   /**
-   * delegatecall 合约
-   * @param data 合约input data
-   * @param addr 合约地址
+   * delegatecall
+   * @param data contract input data
+   * @param addr contract address
    */
     function assemblyCall(bytes memory data, address addr) internal returns (bytes memory) {
         uint256 len = data.length;

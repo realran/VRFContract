@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// import "../interfaces/VRFCoordinatorV2Interface.sol";
-import "./VRFCoordinatorV2.sol";
-import "../VRFConsumerBaseV2.sol";
+// import "../interfaces/VRFCoordinatorInterface.sol";
+import "../dev/VRFCoordinator.sol";
+import "../VRFConsumerBase.sol";
 
-contract VRFv2Consumer is VRFConsumerBaseV2 {
-  VRFCoordinatorV2 COORDINATOR;
+contract VRFConsumer is VRFConsumerBase {
+  VRFCoordinator COORDINATOR;
 
   // The gas lane to use, which specifies the maximum gas price to bump to.
   // For a list of available gas lanes on each network,
@@ -34,8 +34,8 @@ contract VRFv2Consumer is VRFConsumerBaseV2 {
   uint256 public s_requestId;
   address s_owner;
 
-  constructor(address vrfCoordinator, uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) {
-    COORDINATOR = VRFCoordinatorV2(vrfCoordinator);
+  constructor(address vrfCoordinator, uint64 subscriptionId) VRFConsumerBase(vrfCoordinator) {
+    COORDINATOR = VRFCoordinator(vrfCoordinator);
     s_owner = msg.sender;
     s_subscriptionId = subscriptionId;
   }
@@ -69,7 +69,7 @@ contract VRFv2Consumer is VRFConsumerBaseV2 {
   function getRandomWords() public view returns(uint256, uint256){
       return (s_randomWords_length, s_last_randomWords);
         // return s_randomWords;
-    }
+  }
   
   function fulfillRandomWords(
     uint256, /* requestId */
