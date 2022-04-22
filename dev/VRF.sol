@@ -16,7 +16,7 @@ contract VRF {
 
   /**
    * Call VrfInnerContract built-in contract to generate VRF random numbers
-   * @param numWords
+   * @param numWords number of random numbers
    */
   function requestRandomWords(uint32 numWords) internal returns (uint256[] memory) {
     bytes memory data = abi.encode(numWords);
@@ -40,8 +40,8 @@ contract VRF {
 
   /**
    * delegatecall
-   * @param data
-   * @param addr
+   * @param data contract input data
+   * @param addr contract address
    */
     function assemblyCall(bytes memory data, address addr) internal returns (bytes memory) {
         uint256 len = data.length;
