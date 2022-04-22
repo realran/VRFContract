@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // import "../interfaces/VRFCoordinatorInterface.sol";
-import "./VRFCoordinator.sol";
+import "../dev/VRFCoordinator.sol";
 import "../VRFConsumerBase.sol";
 
 contract VRFConsumer is VRFConsumerBase {
