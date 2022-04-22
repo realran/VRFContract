@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../interfaces/VRFCoordinatorV2Interface.sol";
+import "../interfaces/VRFCoordinatorInterface.sol";
 import "../interfaces/TypeAndVersionInterface.sol";
 import "./VRF.sol";
 import "../ConfirmedOwner.sol";
-import "../VRFConsumerBaseV2.sol";
+import "../VRFConsumerBase.sol";
 
-contract VRFCoordinatorV2 is
+contract VRFCoordinator is
   VRF,
   ConfirmedOwner,
   TypeAndVersionInterface,
-  VRFCoordinatorV2Interface
+  VRFCoordinatorInterface
 {
   // We need to maintain a list of consuming addresses.
   // This bound ensures we are able to loop over them as needed.
@@ -150,7 +150,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @notice Sets the configuration of the vrfv2 coordinator
+   * @notice Sets the configuration of the vrf coordinator
    * @param minimumRequestConfirmations global min for request confirmations
    * @param maxGasLimit global max for request gas limit
    * @param stalenessSeconds if the eth/link feed is more stale then this, use the fallback price
@@ -262,7 +262,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function getRequestConfig()
     external
@@ -278,7 +278,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function requestRandomWords(
     bytes32 keyHash,
@@ -323,7 +323,7 @@ contract VRFCoordinatorV2 is
     );
     s_consumers[msg.sender][subId] = nonce;
 
-    // 调用PlatON内置合约生成随机数，并回调fulfillRandomWords
+    // Call the built-in contract of PlatON to generate random numbers, and call back fulfillRandomWords
     uint256[] memory randomWords = VRF.requestRandomWords(numWords);
     fulfillRandomWords(requestId, subId, randomWords, msg.sender);
 
@@ -332,7 +332,7 @@ contract VRFCoordinatorV2 is
 
   function fulfillRandomWords(uint256 requestId, uint64 subId, uint256[] memory randomWords, address sender) internal nonReentrant returns (uint96) {
     delete s_requestCommitments[requestId];
-    VRFConsumerBaseV2 v;
+    VRFConsumerBase v;
     bytes memory resp = abi.encodeWithSelector(v.rawFulfillRandomWords.selector, requestId, randomWords);
 
     s_config.reentrancyLock = true;
@@ -348,7 +348,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * 同步获取随机数
+   * Get random numbers synchronously
    */
   function syncRequestRandomWords(
     bytes32 keyHash,
@@ -384,7 +384,7 @@ contract VRFCoordinatorV2 is
     
     s_consumers[msg.sender][subId] = nonce;
 
-    // 调用内置合约生成随机数，并同步返回
+    // Call the built-in contract to generate random numbers and return synchronously
     uint256[] memory randomWords = VRF.requestRandomWords(numWords);
     emit SyncRequestRandomWordsFulfilled(requestId, numWords, randomWords.length);
     return randomWords;
@@ -412,7 +412,6 @@ contract VRFCoordinatorV2 is
   /**
    * @dev calls target address with exactly gasAmount gas and data as calldata
    * or reverts if at least gasAmount gas is not available.
-   * 回调客户合约的rawFulfillRandomWords函数，去掉了gasAmount-callbackGasLimit参数
    */
   function callWithExactGas(
     address target,
@@ -452,7 +451,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function getSubscription(uint64 subId)
     external
@@ -477,7 +476,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function createSubscription() external override nonReentrant returns (uint64) {
     s_currentSubId++;
@@ -495,7 +494,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function requestSubscriptionOwnerTransfer(uint64 subId, address newOwner)
     external
@@ -511,7 +510,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function acceptSubscriptionOwnerTransfer(uint64 subId) external override nonReentrant {
     if (s_subscriptionConfigs[subId].owner == address(0)) {
@@ -527,7 +526,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function removeConsumer(uint64 subId, address consumer) external override onlySubOwner(subId) nonReentrant {
     if (s_consumers[consumer][subId] == 0) {
@@ -551,7 +550,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function addConsumer(uint64 subId, address consumer) external override onlySubOwner(subId) nonReentrant {
     // Already maxed, cannot add any more consumers.
@@ -571,7 +570,7 @@ contract VRFCoordinatorV2 is
   }
 
   /**
-   * @inheritdoc VRFCoordinatorV2Interface
+   * @inheritdoc VRFCoordinatorInterface
    */
   function cancelSubscription(uint64 subId, address to) external override onlySubOwner(subId) nonReentrant {
     if (pendingRequestExists(subId)) {
@@ -647,6 +646,6 @@ contract VRFCoordinatorV2 is
    * @return Type and version string
    */
   function typeAndVersion() external pure virtual override returns (string memory) {
-    return "VRFCoordinatorV2 1.0.0";
+    return "VRFCoordinator 1.0.0";
   }
 }
