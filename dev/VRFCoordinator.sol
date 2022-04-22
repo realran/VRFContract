@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/VRFCoordinatorInterface.sol";
 import "../interfaces/TypeAndVersionInterface.sol";
 import "./VRF.sol";
-import "../ConfirmedOwner.sol";
+import "./ConfirmedOwner.sol";
 import "../VRFConsumerBase.sol";
 
 contract VRFCoordinator is
