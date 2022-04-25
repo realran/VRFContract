@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// import "../interfaces/VRFCoordinatorInterface.sol";
 import "../dev/VRFCoordinator.sol";
 import "../VRFConsumerBase.sol";
 
@@ -10,7 +9,6 @@ contract VRFConsumer is VRFConsumerBase {
 
   // The gas lane to use, which specifies the maximum gas price to bump to.
   // For a list of available gas lanes on each network,
-  // see https://docs.chain.link/docs/vrf-contracts/#configurations
   bytes32 keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
 
   // Your subscription ID.
@@ -27,17 +25,24 @@ contract VRFConsumer is VRFConsumerBase {
   // The default is 3, but you can set this higher.
   uint16 requestConfirmations = 100;
 
-//   uint256[] public s_randomWords;
-  uint256 public s_randomWords_length;
-  uint256 public s_last_randomWords;
-
   uint256 public s_requestId;
   address s_owner;
 
-  constructor(address vrfCoordinator, uint64 subscriptionId) VRFConsumerBase(vrfCoordinator) {
+  uint256[] public s_randomWords;
+
+  constructor(address vrfCoordinator) VRFConsumerBase(vrfCoordinator) {
     COORDINATOR = VRFCoordinator(vrfCoordinator);
     s_owner = msg.sender;
-    s_subscriptionId = subscriptionId;
+  }
+
+  // Create a new subscription when the contract is initially deployed.
+  function createNewSubscription() external onlyOwner {
+    // Create a subscription with a new subscription ID.
+    address[] memory consumers = new address[](1);
+    consumers[0] = address(this);
+    s_subscriptionId = COORDINATOR.createSubscription();
+    // Add this contract as a consumer of its own subscription.
+    COORDINATOR.addConsumer(s_subscriptionId, consumers[0]);
   }
 
   // Assumes the subscription is funded sufficiently.
@@ -62,21 +67,14 @@ contract VRFConsumer is VRFConsumerBase {
       callbackGasLimit,
       numWords
     );
-    s_randomWords_length = randomWords.length;
-    s_last_randomWords = randomWords[randomWords.length-1];
+    s_randomWords = randomWords;
   }
 
-  function getRandomWords() public view returns(uint256, uint256){
-      return (s_randomWords_length, s_last_randomWords);
-        // return s_randomWords;
-  }
-  
   function fulfillRandomWords(
     uint256, /* requestId */
     uint256[] memory randomWords
   ) internal override {
-    s_randomWords_length = randomWords.length;
-    s_last_randomWords = randomWords[randomWords.length-1];
+    s_randomWords = randomWords;
   }
 
   modifier onlyOwner() {
