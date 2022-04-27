@@ -36,10 +36,11 @@ contract VRFConsumer is VRFConsumerBase {
   constructor() VRFConsumerBase(vrfCoordinator) {
     COORDINATOR = VRFCoordinator(vrfCoordinator);
     s_owner = msg.sender;
+    createNewSubscription();
   }
 
   // Create a new subscription when the contract is initially deployed.
-  function createNewSubscription() external onlyOwner {
+  function createNewSubscription() internal {
     // Create a subscription with a new subscription ID.
     address[] memory consumers = new address[](1);
     consumers[0] = address(this);
