@@ -14,6 +14,9 @@ contract VRFConsumer is VRFConsumerBase {
   // Your subscription ID.
   uint64 s_subscriptionId;
 
+  // PlatON Devnet coordinator.
+  address vrfCoordinator = 0x356d552150f460f57Cd722DC4f3D03A3f2B8386C;
+
   // Depends on the number of requested values that you want sent to the
   // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
   // so 100,000 is a safe default for this example contract. Test and adjust
@@ -30,7 +33,7 @@ contract VRFConsumer is VRFConsumerBase {
 
   uint256[] public s_randomWords;
 
-  constructor(address vrfCoordinator) VRFConsumerBase(vrfCoordinator) {
+  constructor() VRFConsumerBase(vrfCoordinator) {
     COORDINATOR = VRFCoordinator(vrfCoordinator);
     s_owner = msg.sender;
   }
