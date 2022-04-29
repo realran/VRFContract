@@ -49,9 +49,9 @@ contract VRFConsumer is VRFConsumerBase {
     COORDINATOR.addConsumer(s_subscriptionId, consumers[0]);
   }
 
-  // Assumes the subscription is funded sufficiently.
+  // Call the requestRandomWords method to asynchronously request VRF random numbers
+  // and the generated random numbers are returned by the callback function fulfillRandomWords.
   function requestRandomWords(uint32 numWords) external {
-    // Will revert if subscription is not set and funded.
     s_requestId = COORDINATOR.requestRandomWords(
       keyHash,
       s_subscriptionId,
@@ -61,9 +61,8 @@ contract VRFConsumer is VRFConsumerBase {
     );
   }
 
-  // Assumes the subscription is funded sufficiently.
+  // Call the syncRequestRandomWords method to obtain a list of random numbers synchronously.
   function syncRequestRandomWords(uint32 numWords) external {
-    // Will revert if subscription is not set and funded.
     uint256[] memory randomWords = COORDINATOR.syncRequestRandomWords(
       keyHash,
       s_subscriptionId,
