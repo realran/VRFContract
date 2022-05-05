@@ -19,7 +19,7 @@ The brief contract structure design is as follows:
 3. Call the `syncRequestRandomWords()` function in the `VRFConsumer.col` contract to synchronously get random values.
 4. Or call the `requestRandomWords()` function in the `VRFConsumer.col` contract to asynchronously request random values which are returned via the callback function `fulfillRandomWords()`.
 
-For more, please refer to：[Get a Random Number](./Get%20a%20Random%20Number)
+For more, please refer to：[Get a Random Number](https://docs.realran.com/Docs/Getting%20Started/Get%20a%20Random%20Number)
 
 ## License
 
