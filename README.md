@@ -1,27 +1,27 @@
-# VRFContract
-PlatON built-in contract (contract address: 0x30000000000000000000000000000000000001) generates VRF random numbers for users. The Solidity contracts in this repository refer to the usage of Chainlink VRF, encapsulate the invocation of built-in contracts, and at the same time make the entire invocation process of the contract consistent with Chainlink, so that users can quickly migrate Chainlink VRF-based services to PlatON VRF.
+## About VRF
 
-# Contract Overview
+The on-chain random number of PlatON comes from the Nonce field in the block header, which uses the Nonce of the parent block as the seed and generates the random number with the private key signature of the proposer of the current block. In practical use, the [1,33] byte of this field can be taken as the random source of the verifiable random number.
 
-## VRF.sol
-The VRF contract directly calls the PlatON built-in contract through delegatecall and returns a list of random numbers. If the user's current business does not involve the Chainlink VRF process, the contract can be deployed directly.
+Giskard, PlatON’s consensus algorithm, uses the VRF algorithm to select validators, and its on-chain Nonce (VRF and proof) is inherently secure, verifiable, random, and non-tamperable. Since all validators in the PlatON network will verify the Nonce field in the block header, this field will also be applied to the random selection of PlatON consensus nodes, the security of which has been fully proved.
 
-## VRFCoordinatorV2.sol
-The Coordinator contract refers to Chainlink VRF related contracts, and provides subscription management and Consumer contract registration functions, which is convenient for Consumer contracts to access and use VRF functions. Different from Chainlink VRF, the Coordinator contract provides users with two ways to obtain random numbers, i.e. the synchronous and the asynchronous, and cancels the settlement of Link Token related fees.
+We launched `VRF V1` version. In this version, we refer to Chainlink's subscription model and provide a developer-friendly VRF service on PlatON based on the use of PlatON's built-in random numbers. Soon, we will release an off-chain MPC version of VRF based on this version, and developers will not need to make major changes to their contracts.
 
-## VRFv2Consumer.sol
-The contract provides a Consumer contract template, to which users can refer to call the Coordinator contract to obtain random numbers for business processing.
+The brief contract structure design is as follows:
 
-# Contract Usage
+![contracts_overview](./imgs/contracts_overview.png)
 
-1. Deploy the VRCoordinatorV2 contract and the contract address vrfCoordinatorAddress is returned.
+## How to use
 
-2. Create a Subscription in VRCoordinatorV2 and the subscription SubId is returned.
+[VRFConsumer.sol](https://github.com/realran/VRFContract/blob/main/sample/VRFConsumer.sol) is a sample contract, you can refer to this contract and do the following steps to easily enable VRF integration :
 
-3. Deploy the VRFv2Consumer contract, pass in vrfCoordinatorAddress and SubId as the constructor parameters, and the contract address consumerAddress is returned.
+1. Get the `VRFCoordinator` address based on the network in the and update the `vrfCoordinator` address in the  `VRFConsumer.col`.
+2. Deploy the `VRFConsumer.col` contract. This example contract includes the `createNewSubscription()` function in the `constructor()` that creates the subscription and adds itself as a consumer automatically when you deploy it.
+3. Call the `syncRequestRandomWords()` function in the `VRFConsumer.col` contract to synchronously get random values.
+4. Or call the `requestRandomWords()` function in the `VRFConsumer.col` contract to asynchronously request random values which are returned via the callback function `fulfillRandomWords()`.
 
-4. Register the Consumer contract with VRCoordinatorV2, pass in SubId and consumerAddress as parameters.
+For more, please refer to：[Get a Random Number](https://docs.realran.com/Docs/Getting%20Started/Get%20a%20Random%20Number)
 
-5. Call the syncRequestRandomWords method of the Consumer contract to obtain a list of random numbers synchronously.
+## License
 
-6. Call the requestRandomWords method of the Consumer contract to asynchronously request VRF random numbers, and the generated random numbers are returned by the callback function fulfillRandomWords.
+[MIT](https://choosealicense.com/licenses/mit/)
+
