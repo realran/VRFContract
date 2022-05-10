@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../dev/VRFCoordinator.sol";
-import "../VRFConsumerBase.sol";
+import "@realrancrypto/contracts@1.0.0/src/dev/VRFCoordinator.sol";
+import "@realrancrypto/contracts@1.0.0/src/VRFConsumerBase.sol";
 
 contract VRFConsumer is VRFConsumerBase {
   VRFCoordinator COORDINATOR;
 
-  // The gas lane to use, which specifies the maximum gas price to bump to.
-  // For a list of available gas lanes on each network,
+  // Default parameters, do not need to be modified
   bytes32 keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
 
   // Your subscription ID.
@@ -17,15 +16,10 @@ contract VRFConsumer is VRFConsumerBase {
   // PlatON Devnet coordinator.
   address vrfCoordinator = 0x356d552150f460f57Cd722DC4f3D03A3f2B8386C;
 
-  // Depends on the number of requested values that you want sent to the
-  // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
-  // so 100,000 is a safe default for this example contract. Test and adjust
-  // this limit based on the network that you select, the size of the request,
-  // and the processing of the callback request in the fulfillRandomWords()
-  // function.
+  // Default parameters, do not need to be modified
   uint32 callbackGasLimit = 100;
 
-  // The default is 3, but you can set this higher.
+  // Default parameters, do not need to be modified
   uint16 requestConfirmations = 100;
 
   uint256 public s_requestId;
