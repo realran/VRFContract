@@ -27,8 +27,7 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
   uint256 public s_requestId;
   address s_owner;
 
-  uint256 public s_last_randomWords;
-  uint256 public s_length_randomWords;
+  uint256[] public s_randomWords;
 
   constructor() VRFConsumerBaseV2(vrfCoordinator) {
     COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
@@ -52,8 +51,7 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
     uint256, /* requestId */
     uint256[] memory randomWords
   ) internal override {
-    s_length_randomWords = randomWords.length;
-    s_last_randomWords = randomWords[s_length_randomWords-1];
+    s_randomWords = randomWords;
   }
 
   // Create a new subscription when the contract is initially deployed.
