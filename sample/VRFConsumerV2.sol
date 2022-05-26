@@ -8,8 +8,7 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
 
   VRFCoordinatorV2Interface COORDINATOR;
 
-  // The gas lane to use, which specifies the maximum gas price to bump to.
-  // For a list of available gas lanes on each network,
+  // The proving key hash key associated with the bls public key
   bytes32 keyHash = 0x103c831dde18151eb1eb49d831c44d57cc98ea8d8f4f12f599c68989f7cebd78;
 
   // Your subscription ID.
@@ -18,13 +17,9 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
   // PlatON Devnet coordinator.
   address vrfCoordinator = 0xAFc3fAb71B871E9cf3146c95d83B219dd5E7DD96;
 
-  // Depends on the number of requested values that you want sent to the
-  // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
-  // so 100,000 is a safe default for this example contract. Test and adjust
-  // this limit based on the network that you select, the size of the request,
-  // and the processing of the callback request in the fulfillRandomWords()
-  // function.
-  uint32 callbackGasLimit = 2000000;
+  // A reasonable default is 100000, but this value could be different
+  // on other networks.
+  uint32 callbackGasLimit = 100000;
 
   // The default is 3, but you can set this higher.
   uint16 requestConfirmations = 3;
