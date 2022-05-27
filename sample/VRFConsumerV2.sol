@@ -17,9 +17,9 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
   // PlatON Devnet coordinator.
   address vrfCoordinator = 0xAFc3fAb71B871E9cf3146c95d83B219dd5E7DD96;
 
-  // A reasonable default is 100000, but this value could be different
+  // A reasonable default is 2000000, but this value could be different
   // on other networks.
-  uint32 callbackGasLimit = 100000;
+  uint32 callbackGasLimit = 2000000;
 
   // The default is 3, but you can set this higher.
   uint16 requestConfirmations = 3;
