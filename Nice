@@ -1,0 +1,41 @@
+
+Your files are stored in indexedDB, 1.06 MB / 63.65 GB used
+
+You can use this terminal to: 
+Check transactions details and start debugging.
+Execute JavaScript scripts:
+ - Input a script directly in the command line interface 
+ - Select a Javascript file in the file explorer and then run \`remix.execute()\` or \`remix.exeCurrent()\`  in the command line interface  
+ - Right click on a JavaScript file in the file explorer and then click \`Run\` 
+The following libraries are accessible:
+web3 version 1.5.2
+ethers.js 
+remix
+Type the library name to see available commands.
+creation of VRFConsumerV2 pending...
+view on etherscan
+[block:22064983 txIndex:0]from: 0x8FC...B7cdCto: VRFConsumerV2.(constructor)value: 0 weidata: 0x60a...a0033logs: 0hash: 0xf95...4dfd9
+transact to VRFConsumerV2.requestRandomWords pending ... 
+view on etherscan
+[block:22065024 txIndex:0]from: 0x8FC...B7cdCto: VRFConsumerV2.requestRandomWords(uint32) 0xc05...05983value: 0 weidata: 0xe72...0000alogs: 0hash: 0x4d3...809d0
+call to VRFConsumerV2.s_randomWords
+call to VRFConsumerV2.s_randomWords errored: Internal JSON-RPC error.
+{
+  "code": -32000,
+  "message": "execution reverted"
+}
+transact to VRFConsumerV2.requestRandomWords pending ... 
+view on etherscan
+call to VRFConsumerV2.s_randomWords
+CALL
+[call]from: 0x8FC4c1492F10A9310dCD94c2E9a2cb68A3dB7cdCto: VRFConsumerV2.s_randomWords(uint256)data: 0xf6e...00009
+from	0x8FC4c1492F10A9310dCD94c2E9a2cb68A3dB7cdC
+to	VRFConsumerV2.s_randomWords(uint256) 0xc050Ef752aB8BEA77D39FD2B3bAD71B0aEd05983
+input	0xf6e...00009
+decoded input	{
+	"uint256 ": "9"
+}
+decoded output	{
+	"0": "uint256: 82149825503693941280467822682887209947474565106398649502011323148960530188380"
+}
+logs	[]
