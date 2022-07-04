@@ -8,7 +8,7 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
 
   VRFCoordinatorV2Interface COORDINATOR;
 
-  // The proving key hash key associated with the bls public key
+  // The proving key hash key associated with the public key
   bytes32 keyHash = 0x103c831dde18151eb1eb49d831c44d57cc98ea8d8f4f12f599c68989f7cebd78;
 
   // Your subscription ID.
@@ -27,7 +27,8 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
   uint256 public s_requestId;
   address s_owner;
 
-  uint256[] public s_randomWords;
+  uint256 public s_last_randomWords;
+  uint256 public s_length_randomWords;
 
   constructor() VRFConsumerBaseV2(vrfCoordinator) {
     COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
@@ -51,7 +52,8 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
     uint256, /* requestId */
     uint256[] memory randomWords
   ) internal override {
-    s_randomWords = randomWords;
+    s_length_randomWords = randomWords.length;
+    s_last_randomWords = randomWords[s_length_randomWords-1];
   }
 
   // Create a new subscription when the contract is initially deployed.

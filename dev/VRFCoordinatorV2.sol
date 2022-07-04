@@ -3,23 +3,20 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/TypeAndVersionInterface.sol";
 import "../interfaces/VRFCoordinatorV2Interface.sol";
-import "../interfaces/ERC677ReceiverInterface.sol";
-import "../interfaces/LATTokenInterface.sol";
-import "../interfaces/AggregatorV3Interface.sol";
 import "./VRF.sol";
-import "./ConfirmedOwner.sol";
 import "../VRFConsumerBaseV2.sol";
+import "./token/WLAT.sol";
+import "@openzeppelin/contracts-upgradeable@4.6.0/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable@4.6.0/access/OwnableUpgradeable.sol";
 
 contract VRFCoordinatorV2 is
-  VRF,
-  ConfirmedOwner,
   TypeAndVersionInterface,
   VRFCoordinatorV2Interface,
-  ERC677ReceiverInterface
+  VRF,
+  WLAT,
+  Initializable,
+  OwnableUpgradeable
 {
-  LATTokenInterface public immutable LATTOKEN;
-  AggregatorV3Interface public immutable TOKEN_LAT_FEED;
-
   // We need to maintain a list of consuming addresses.
   // This bound ensures we are able to loop over them as needed.
   // Should a user require more consumers, they can use multiple subscriptions.
@@ -28,18 +25,15 @@ contract VRFCoordinatorV2 is
   error InsufficientBalance();
   error InvalidConsumer(uint64 subId, address consumer);
   error InvalidSubscription();
-  error OnlyCallableFromLink();
-  error InvalidCalldata();
   error MustBeSubOwner(address owner);
   error PendingRequestExists();
   error MustBeRequestedOwner(address proposedOwner);
   error BalanceInvariantViolated(uint256 internalBalance, uint256 externalBalance); // Should never happen
   event FundsRecovered(address to, uint256 amount);
-  // We use the subscription struct (1 word) at fulfillment time.
+
   struct Subscription {
-    // There are only 1e9*1e18 = 1e27 juels in existence, so the balance can fit in uint96 (2^96 ~ 7e28)
-    uint96 balance; // Common LAT token balance used for all consumer requests.
-    uint64 reqCount; // For fee tiers
+    uint96 balance; // Common LAT balance used for all consumer requests.
+    uint64 reqCount;
   }
   // We use the config for the mgmt APIs
   struct SubscriptionConfig {
@@ -61,10 +55,10 @@ contract VRFCoordinatorV2 is
     
   // We make the sub count public so that its possible to get all the current subscriptions via getSubscription.
   uint64 private s_currentSubId;
-  // s_totalBalance tracks the total LAT token sent to/from
-  // this contract through onTokenTransfer, cancelSubscription and oracleWithdraw.
-  // A discrepancy with this contract's LAT token balance indicates someone
-  // sent tokens using transfer and so we may need to use recoverFunds.
+  // s_totalBalance tracks the total LAT sent to/from
+  // this contract through fundSubscription, cancelSubscription and oracleWithdraw.
+  // A discrepancy with this contract's LAT balance indicates someone
+  // sent LAT using transfer and so we may need to use recoverFunds.
   uint96 private s_totalBalance;
   event SubscriptionCreated(uint64 indexed subId, address owner);
   event SubscriptionFunded(uint64 indexed subId, uint256 oldBalance, uint256 newBalance);
@@ -84,12 +78,9 @@ contract VRFCoordinatorV2 is
   error NumWordsTooBig(uint32 have, uint32 want);
   error ProvingKeyAlreadyRegistered(bytes32 keyHash);
   error NoSuchProvingKey(bytes32 keyHash);
-  error InvalidLinkWeiPrice(int256 linkWei);
-  error InsufficientGasForConsumer(uint256 have, uint256 want);
   error NoCorrespondingRequest();
   error IncorrectCommitment();
-  error BlockhashNotInStore(uint256 blockNum);
-  error PaymentTooLarge();
+  error IncorrectGasPrice();
   error Reentrant();
   error ErrVerifySignature();
   struct RequestCommitment {
@@ -123,45 +114,22 @@ contract VRFCoordinatorV2 is
     uint32 maxGasLimit;
     // Reentrancy protection.
     bool reentrancyLock;
-    // stalenessSeconds is how long before we consider the feed price to be stale
-    // and fallback to fallbackWeiPerUnitLink.
-    uint32 stalenessSeconds;
     // Gas to cover oracle payment after we calculate the payment.
     // We make it configurable in case those operations are repriced.
     uint32 gasAfterPaymentCalculation;
   }
-  int256 private s_fallbackWeiPerUnitToken;
   Config private s_config;
-  FeeConfig private s_feeConfig;
-  struct FeeConfig {
-    // Flat fee charged per fulfillment in millionths of link
-    // So fee range is [0, 2^32/10^6].
-    uint32 fulfillmentFlatFeeLinkPPMTier1;
-    uint32 fulfillmentFlatFeeLinkPPMTier2;
-    uint32 fulfillmentFlatFeeLinkPPMTier3;
-    uint32 fulfillmentFlatFeeLinkPPMTier4;
-    uint32 fulfillmentFlatFeeLinkPPMTier5;
-    uint24 reqsForTier2;
-    uint24 reqsForTier3;
-    uint24 reqsForTier4;
-    uint24 reqsForTier5;
-  }
+  
   event ConfigSet(
     uint16 minimumRequestConfirmations,
     uint32 maxGasLimit,
-    uint32 stalenessSeconds,
-    uint32 gasAfterPaymentCalculation,
-    int256 fallbackWeiPerUnitLink,
-    FeeConfig feeConfig
+    uint32 gasAfterPaymentCalculation
   );
 
-  constructor(
-    address lattoken,
-    address tokenLatFeed
-  ) ConfirmedOwner(msg.sender) {
-    LATTOKEN = LATTokenInterface(lattoken);
-    TOKEN_LAT_FEED = AggregatorV3Interface(tokenLatFeed);
-  }
+  function initialize() public initializer {
+    __Context_init_unchained();
+		__Ownable_init_unchained();
+	}
 
   /**
    * @notice Registers a proving key to an oracle.
@@ -212,18 +180,12 @@ contract VRFCoordinatorV2 is
    * @notice Sets the configuration of the vrfv2 coordinator
    * @param minimumRequestConfirmations global min for request confirmations
    * @param maxGasLimit global max for request gas limit
-   * @param stalenessSeconds if the eth/link feed is more stale then this, use the fallback price
    * @param gasAfterPaymentCalculation gas used in doing accounting after completing the gas measurement
-   * @param fallbackWeiPerUnitToken fallback LAT/token price in the case of a stale feed
-   * @param feeConfig fee tier configuration
    */
   function setConfig(
     uint16 minimumRequestConfirmations,
     uint32 maxGasLimit,
-    uint32 stalenessSeconds,
-    uint32 gasAfterPaymentCalculation,
-    int256 fallbackWeiPerUnitToken,
-    FeeConfig memory feeConfig
+    uint32 gasAfterPaymentCalculation
   ) external onlyOwner {
     if (minimumRequestConfirmations > MAX_REQUEST_CONFIRMATIONS) {
       revert InvalidRequestConfirmations(
@@ -232,74 +194,34 @@ contract VRFCoordinatorV2 is
         MAX_REQUEST_CONFIRMATIONS
       );
     }
-    if (fallbackWeiPerUnitToken < 0) {
-      revert InvalidLinkWeiPrice(fallbackWeiPerUnitToken);
-    }
     s_config = Config({
       minimumRequestConfirmations: minimumRequestConfirmations,
       maxGasLimit: maxGasLimit,
-      stalenessSeconds: stalenessSeconds,
       gasAfterPaymentCalculation: gasAfterPaymentCalculation,
       reentrancyLock: false
     });
-    s_feeConfig = feeConfig;
-    s_fallbackWeiPerUnitToken = fallbackWeiPerUnitToken;
     emit ConfigSet(
       minimumRequestConfirmations,
       maxGasLimit,
-      stalenessSeconds,
-      gasAfterPaymentCalculation,
-      fallbackWeiPerUnitToken,
-      s_feeConfig
+      gasAfterPaymentCalculation
     );
   }
 
   function getConfig() external view returns (
       uint16 minimumRequestConfirmations,
       uint32 maxGasLimit,
-      uint32 stalenessSeconds,
       uint32 gasAfterPaymentCalculation
     )
   {
     return (
       s_config.minimumRequestConfirmations,
       s_config.maxGasLimit,
-      s_config.stalenessSeconds,
       s_config.gasAfterPaymentCalculation
-    );
-  }
-
-  function getFeeConfig() external view  returns (
-      uint32 fulfillmentFlatFeeLinkPPMTier1,
-      uint32 fulfillmentFlatFeeLinkPPMTier2,
-      uint32 fulfillmentFlatFeeLinkPPMTier3,
-      uint32 fulfillmentFlatFeeLinkPPMTier4,
-      uint32 fulfillmentFlatFeeLinkPPMTier5,
-      uint24 reqsForTier2,
-      uint24 reqsForTier3,
-      uint24 reqsForTier4,
-      uint24 reqsForTier5
-    )
-  {
-    return (
-      s_feeConfig.fulfillmentFlatFeeLinkPPMTier1,
-      s_feeConfig.fulfillmentFlatFeeLinkPPMTier2,
-      s_feeConfig.fulfillmentFlatFeeLinkPPMTier3,
-      s_feeConfig.fulfillmentFlatFeeLinkPPMTier4,
-      s_feeConfig.fulfillmentFlatFeeLinkPPMTier5,
-      s_feeConfig.reqsForTier2,
-      s_feeConfig.reqsForTier3,
-      s_feeConfig.reqsForTier4,
-      s_feeConfig.reqsForTier5
     );
   }
 
   function getTotalBalance() external view returns (uint256) {
     return s_totalBalance;
-  }
-
-  function getFallbackWeiPerUnitToken() external view returns (int256) {
-    return s_fallbackWeiPerUnitToken;
   }
 
   /**
@@ -314,19 +236,15 @@ contract VRFCoordinatorV2 is
     cancelSubscriptionHelper(subId, s_subscriptionConfigs[subId].owner);
   }
 
-  /**
-   * @notice Recover LATTOKEN sent with transfer instead of transferAndCall.
-   * @param to address to send link to
-   */
   function recoverFunds(address to) external onlyOwner {
-    uint256 externalBalance = LATTOKEN.balanceOf(address(this));
+    uint256 externalBalance = super.totalSupply();
     uint256 internalBalance = uint256(s_totalBalance);
     if (internalBalance > externalBalance) {
       revert BalanceInvariantViolated(internalBalance, externalBalance);
     }
     if (internalBalance < externalBalance) {
       uint256 amount = externalBalance - internalBalance;
-      LATTOKEN.transfer(to, amount);
+      super.transfer(to, amount);
       emit FundsRecovered(to, amount);
     }
     // If the balances are equal, nothing to be done.
@@ -448,29 +366,7 @@ contract VRFCoordinatorV2 is
     if (!verify) {
       revert ErrVerifySignature();
     }
-    randomness = proof.signature;
-  }
-
-  /*
-   * @notice Compute fee based on the request count
-   * @param reqCount number of requests
-   * @return feePPM fee in LAT token PPM
-   */
-  function getFeeTier(uint64 reqCount) public view returns (uint32) {
-    FeeConfig memory fc = s_feeConfig;
-    if (0 <= reqCount && reqCount <= fc.reqsForTier2) {
-      return fc.fulfillmentFlatFeeLinkPPMTier1;
-    }
-    if (fc.reqsForTier2 < reqCount && reqCount <= fc.reqsForTier3) {
-      return fc.fulfillmentFlatFeeLinkPPMTier2;
-    }
-    if (fc.reqsForTier3 < reqCount && reqCount <= fc.reqsForTier4) {
-      return fc.fulfillmentFlatFeeLinkPPMTier3;
-    }
-    if (fc.reqsForTier4 < reqCount && reqCount <= fc.reqsForTier5) {
-      return fc.fulfillmentFlatFeeLinkPPMTier4;
-    }
-    return fc.fulfillmentFlatFeeLinkPPMTier5;
+    randomness = toBytes(proof.signature);
   }
 
   /*
@@ -502,20 +398,18 @@ contract VRFCoordinatorV2 is
     bool success = callWithExactGas(rc.callbackGasLimit, rc.sender, resp);
     s_config.reentrancyLock = false;
 
-    // Increment the req count for fee tier selection.
-    uint64 reqCount = s_subscriptions[rc.subId].reqCount;
     s_subscriptions[rc.subId].reqCount += 1;
+
+    if (tx.gasprice <= 0) {
+      revert IncorrectGasPrice();
+    }
 
     // We want to charge users exactly for how much gas they use in their callback.
     // The gasAfterPaymentCalculation is meant to cover these additional operations where we
     // decrement the subscription balance and increment the oracles withdrawable balance.
-    // We also add the flat link fee to the payment amount.
-    // Its specified in millionths of link, if s_config.fulfillmentFlatFeeLinkPPM = 1
-    // 1 link / 1e6 = 1e18 juels / 1e6 = 1e12 juels.
     uint96 payment = calculatePaymentAmount(
       startGas,
       s_config.gasAfterPaymentCalculation,
-      getFeeTier(reqCount),
       tx.gasprice
     );
     if (s_subscriptions[rc.subId].balance < payment) {
@@ -570,36 +464,10 @@ contract VRFCoordinatorV2 is
   function calculatePaymentAmount(
     uint256 startGas,
     uint256 gasAfterPaymentCalculation,
-    uint32 fulfillmentFlatFeeLinkPPM,
     uint256 weiPerUnitGas
   ) internal view returns (uint96) {
-    int256 weiPerUnitToken = getFeedData();
-    if (weiPerUnitToken < 0) {
-      revert InvalidLinkWeiPrice(weiPerUnitToken);
-    }
-    uint256 paymentNoFee = 0;
-    if (weiPerUnitToken > 0) {
-      // (1e18 juels/link) (wei/gas * gas) / (wei/link) = juels
-      paymentNoFee = (1e18 * weiPerUnitGas * (gasAfterPaymentCalculation + startGas - gasleft())) / uint256(weiPerUnitToken);
-    }
-    uint256 fee = 1e12 * uint256(fulfillmentFlatFeeLinkPPM);
-    if (paymentNoFee > (1e27 - fee)) {
-      revert PaymentTooLarge(); // Payment + fee cannot be more than all of the token in existence.
-    }
-    return uint96(paymentNoFee + fee);
-  }
-
-  function getFeedData() private view returns (int256) {
-    uint32 stalenessSeconds = s_config.stalenessSeconds;
-    bool staleFallback = stalenessSeconds > 0;
-    uint256 timestamp;
-    int256 weiPerUnitToken;
-    (, weiPerUnitToken, , timestamp, ) = TOKEN_LAT_FEED.latestRoundData();
-    // solhint-disable-next-line not-rely-on-time
-    if (staleFallback && stalenessSeconds < block.timestamp - timestamp) {
-      weiPerUnitToken = s_fallbackWeiPerUnitToken;
-    }
-    return weiPerUnitToken;
+    uint256 paymentNoFee = weiPerUnitGas * (gasAfterPaymentCalculation + startGas - gasleft());
+    return uint96(paymentNoFee);
   }
 
   /*
@@ -613,31 +481,22 @@ contract VRFCoordinatorV2 is
     }
     s_withdrawableTokens[msg.sender] -= amount;
     s_totalBalance -= amount;
-    if (!LATTOKEN.transfer(recipient, amount)) {
+    if (!super.transfer(recipient, uint(amount))) {
       revert InsufficientBalance();
     }
   }
 
-  function onTokenTransfer(
-    address, /* sender */
-    uint256 amount,
-    bytes calldata data
-  ) external override nonReentrant {
-    if (msg.sender != address(LATTOKEN)) {
-      revert OnlyCallableFromLink();
-    }
-    if (data.length != 32) {
-      revert InvalidCalldata();
-    }
-    uint64 subId = abi.decode(data, (uint64));
+  function fundSubscription (uint64 subId) external payable nonReentrant {
+    // We do not check that the msg.sender is the subscription owner,
+    // anyone can fund a subscription.
     if (s_subscriptionConfigs[subId].owner == address(0)) {
       revert InvalidSubscription();
     }
-    // We do not check that the msg.sender is the subscription owner,
-    // anyone can fund a subscription.
+    uint amount = msg.value;
     uint256 oldBalance = s_subscriptions[subId].balance;
     s_subscriptions[subId].balance += uint96(amount);
     s_totalBalance += uint96(amount);
+    super.deposit(msg.sender, amount);
     emit SubscriptionFunded(subId, oldBalance, oldBalance + amount);
   }
 
@@ -777,7 +636,7 @@ contract VRFCoordinatorV2 is
     delete s_subscriptionConfigs[subId];
     delete s_subscriptions[subId];
     s_totalBalance -= balance;
-    if (!LATTOKEN.transfer(to, uint256(balance))) {
+    if (super.transfer(to, uint(balance))) {
       revert InsufficientBalance();
     }
     emit SubscriptionCanceled(subId, to, balance);
