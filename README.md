@@ -10,7 +10,7 @@ The brief contract structure design is as follows:
 
 ![contracts_overview](./imgs/contracts_overview.png)
 
-- BLS Service : use multiple BLS private keys to sign seeds separately and aggregate the signatures.
+- DKG SECP256K1 Service : a distributed signature service in which multiple nodes generate a public key and collaborate to generate a threshold signature, which can be verified by the public key.
 
 ## How to use
 
