@@ -10,16 +10,15 @@ The brief contract structure design is as follows:
 
 ![contracts_overview](./imgs/contracts_overview.png)
 
+- BLS Service : use multiple BLS private keys to sign seeds separately and aggregate the signatures.
+
 ## How to use
 
-[VRFConsumer.sol](https://github.com/realran/VRFContract/blob/main/sample/VRFConsumer.sol) is a sample contract, you can refer to this contract and do the following steps to easily enable VRF integration :
+[VRFConsumerV2.sol](https://github.com/realran/VRFContract/blob/main/sample/VRFConsumerV2.sol) is a sample contract, you can refer to this contract and do the following steps to easily enable VRF integration :
 
-1. Get the `VRFCoordinator` address based on the network in the and update the `vrfCoordinator` address in the  `VRFConsumer.col`.
-2. Deploy the `VRFConsumer.col` contract. This example contract includes the `createNewSubscription()` function in the `constructor()` that creates the subscription and adds itself as a consumer automatically when you deploy it.
-3. Call the `syncRequestRandomWords()` function in the `VRFConsumer.col` contract to synchronously get random values.
-4. Or call the `requestRandomWords()` function in the `VRFConsumer.col` contract to asynchronously request random values which are returned via the callback function `fulfillRandomWords()`.
-
-For more, please refer to：[Get a Random Number](https://docs.realran.com/Docs/Getting%20Started/Get%20a%20Random%20Number)
+1. Get the `Key Hash` and `VRFCoordinator` address based on the network in the and update the `keyHash` and `vrfCoordinator` address in the  `VRFConsumerV2.sol`.
+2. Deploy the `VRFConsumerV2.sol` contract. This example contract includes the `createNewSubscription()` function in the `constructor()` that creates the subscription and adds itself as a consumer automatically when you deploy it.
+3. Call the `requestRandomWords()` function in the `VRFConsumerV2.col` contract to asynchronously request random values which are returned via the callback function `fulfillRandomWords()`.
 
 ## License
 
