@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@realrancrypto/contracts@2.0.0/src/interfaces/VRFCoordinatorV2Interface.sol";
-import "@realrancrypto/contracts@2.0.0/src/VRFConsumerBaseV2.sol";
+import "../interfaces/VRFCoordinatorV2Interface.sol";
+import "../VRFConsumerBaseV2.sol";
 
 contract VRFConsumerV2 is VRFConsumerBaseV2 {
 
   VRFCoordinatorV2Interface COORDINATOR;
 
   // The proving key hash key associated with the bls public key
-  bytes32 keyHash = 0x78e96b19f860056881cc2552c8f8083fa1dbed8a5ab010d3626a4000fb528e9f;
+  bytes32 keyHash = 0x103c831dde18151eb1eb49d831c44d57cc98ea8d8f4f12f599c68989f7cebd78;
 
   // Your subscription ID.
   uint64 s_subscriptionId;
 
   // PlatON Devnet coordinator.
-  address vrfCoordinator = 0xFE5F2A9d5227Fb1c4541e3D67aaF516d7d51495C;
+  address vrfCoordinator = 0xAFc3fAb71B871E9cf3146c95d83B219dd5E7DD96;
 
   // A reasonable default is 2000000, but this value could be different
   // on other networks.
