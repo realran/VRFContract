@@ -94,7 +94,7 @@ pragma solidity ^0.8.0;
  * @dev responding to the request (however this is not enforced in the contract
  * @dev and so remains effective only in the case of unmodified oracle software).
  */
-abstract contract VRFConsumerBase {
+abstract contract VRFConsumerBaseV2 {
   error OnlyCoordinatorCanFulfill(address have, address want);
   address private immutable vrfCoordinator;
 
@@ -111,7 +111,7 @@ abstract contract VRFConsumerBase {
    * @notice principles to keep in mind when implementing your fulfillRandomness
    * @notice method.
    *
-   * @dev VRFConsumerBase expects its subcontracts to have a method with this
+   * @dev VRFConsumerBaseV2 expects its subcontracts to have a method with this
    * @dev signature, and will call it once it has verified the proof
    * @dev associated with the randomness. (It is triggered via a call to
    * @dev rawFulfillRandomness, below.)
