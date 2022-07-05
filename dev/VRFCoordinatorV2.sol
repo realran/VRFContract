@@ -486,13 +486,14 @@ contract VRFCoordinatorV2 is
     }
   }
 
-  function fundSubscription (uint64 subId) external payable nonReentrant {
+  function fundSubscription(uint64 subId) external payable nonReentrant {
+    uint amount = msg.value;
+    require(amount > 0, "the recharge amount is less than 0");
     // We do not check that the msg.sender is the subscription owner,
     // anyone can fund a subscription.
     if (s_subscriptionConfigs[subId].owner == address(0)) {
       revert InvalidSubscription();
     }
-    uint amount = msg.value;
     uint256 oldBalance = s_subscriptions[subId].balance;
     s_subscriptions[subId].balance += uint96(amount);
     s_totalBalance += uint96(amount);
@@ -636,7 +637,7 @@ contract VRFCoordinatorV2 is
     delete s_subscriptionConfigs[subId];
     delete s_subscriptions[subId];
     s_totalBalance -= balance;
-    if (super.transfer(to, uint(balance))) {
+    if (!super.transfer(to, uint(balance))) {
       revert InsufficientBalance();
     }
     emit SubscriptionCanceled(subId, to, balance);
