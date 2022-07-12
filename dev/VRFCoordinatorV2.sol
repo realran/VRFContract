@@ -82,7 +82,6 @@ contract VRFCoordinatorV2 is
   error IncorrectCommitment();
   error IncorrectGasPrice();
   error Reentrant();
-  error ErrVerifySignature();
   struct RequestCommitment {
     uint64 blockNum;
     uint64 subId;
@@ -107,7 +106,7 @@ contract VRFCoordinatorV2 is
     uint32 numWords,
     address indexed sender
   );
-  event RandomWordsFulfilled(uint256 indexed requestId, bytes outputSeed, uint96 payment, bool success);
+  event RandomWordsFulfilled(uint256 indexed requestId, uint256 outputSeed, uint96 payment, bool success);
 
   struct Config {
     uint16 minimumRequestConfirmations;
@@ -136,7 +135,7 @@ contract VRFCoordinatorV2 is
    * @param oracle address of the oracle
    * @param publicProvingKey key that oracle can use to submit vrf fulfillments
    */
-  function registerProvingKey(address oracle, bytes calldata publicProvingKey) external onlyOwner {
+  function registerProvingKey(address oracle, uint256[2] calldata publicProvingKey) external onlyOwner {
     bytes32 kh = hashOfKey(publicProvingKey);
     if (s_provingKeys[kh] != address(0)) {
       revert ProvingKeyAlreadyRegistered(kh);
@@ -150,7 +149,7 @@ contract VRFCoordinatorV2 is
    * @notice Deregisters a proving key to an oracle.
    * @param publicProvingKey key that oracle can use to submit vrf fulfillments
    */
-  function deregisterProvingKey(bytes calldata publicProvingKey) external onlyOwner {
+  function deregisterProvingKey(uint256[2] calldata publicProvingKey) external onlyOwner {
     bytes32 kh = hashOfKey(publicProvingKey);
     address oracle = s_provingKeys[kh];
     if (oracle == address(0)) {
@@ -172,9 +171,10 @@ contract VRFCoordinatorV2 is
    * @notice Returns the proving key hash key associated with this public key
    * @param publicKey the key to return the hash of
    */
-  function hashOfKey(bytes calldata publicKey) public pure returns (bytes32) {
+  function hashOfKey(uint256[2] memory publicKey) public pure returns (bytes32) {
     return keccak256(abi.encode(publicKey));
   }
+
 
   /**
    * @notice Sets the configuration of the vrfv2 coordinator
@@ -341,7 +341,7 @@ contract VRFCoordinatorV2 is
   function getRandomnessFromProof(Proof calldata proof, RequestCommitment memory rc) private view returns (
       bytes32 keyHash,
       uint256 requestId,
-      bytes memory randomness
+      uint256 randomness
     )
   {
     keyHash = hashOfKey(proof.pk);
@@ -362,11 +362,7 @@ contract VRFCoordinatorV2 is
     }
 
     // The seed actually used by the VRF machinery, mixing in the blockhash
-    bool verify = VRF.randomValueFromVRFProof(proof); // Reverts on failure
-    if (!verify) {
-      revert ErrVerifySignature();
-    }
-    randomness = toBytes(proof.signature);
+    randomness = VRF.randomValueFromVRFProof(proof, proof.seed); // Reverts on failure
   }
 
   /*
@@ -378,7 +374,7 @@ contract VRFCoordinatorV2 is
    */
   function fulfillRandomWords(Proof calldata proof, RequestCommitment memory rc) external nonReentrant returns (uint96) {
     uint256 startGas = gasleft();
-    (bytes32 keyHash, uint256 requestId, bytes memory randomness) = getRandomnessFromProof(proof, rc);
+    (bytes32 keyHash, uint256 requestId, uint256 randomness) = getRandomnessFromProof(proof, rc);
 
     uint256[] memory randomWords = new uint256[](rc.numWords);
     for (uint256 i = 0; i < rc.numWords; i++) {
