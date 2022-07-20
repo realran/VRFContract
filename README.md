@@ -10,15 +10,16 @@ The brief contract structure design is as follows:
 
 ![contracts_overview](./imgs/contracts_overview.png)
 
-- DKG SECP256K1 Service : a distributed signature service in which multiple nodes generate a public key and collaborate to generate a threshold signature, which can be verified by the public key.
+- VRF Service : A service that uses the ECDSA key algorithm to generate unpredictable and verifiable random numbers that are also unique, collision resistant, and random.
 
 ## How to use
 
-[VRFConsumerV2.sol](https://github.com/realran/VRFContract/blob/main/sample/VRFConsumerV2.sol) is a sample contract, you can refer to this contract and do the following steps to easily enable VRF integration :
+[VRFConsumerV2.sol](https://github.com/realran/VRFContract/blob/vrf2.1/sample/VRFConsumerV2.sol) is a sample contract, you can refer to this contract and do the following steps to easily enable VRF integration :
 
 1. Get the `Key Hash` and `VRFCoordinator` address based on the network in the and update the `keyHash` and `vrfCoordinator` address in the  `VRFConsumerV2.sol`.
 2. Deploy the `VRFConsumerV2.sol` contract. This example contract includes the `createNewSubscription()` function in the `constructor()` that creates the subscription and adds itself as a consumer automatically when you deploy it.
-3. Call the `requestRandomWords()` function in the `VRFConsumerV2.col` contract to asynchronously request random values which are returned via the callback function `fulfillRandomWords()`.
+3. Directly use the wallet account to recharge the subscription by calling the fundSubscription method of the VRCoordinator contract.
+4. Call the `requestRandomWords()` function in the `VRFConsumerV2.col` contract to asynchronously request random values which are returned via the callback function `fulfillRandomWords()`.
 
 ## License
 
