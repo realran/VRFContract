@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../interfaces/VRFCoordinatorV2Interface.sol";
-import "../VRFConsumerBaseV2.sol";
+import "@realrancrypto/contracts@2.1.0/src/interfaces/VRFCoordinatorV2Interface.sol";
+import "@realrancrypto/contracts@2.1.0/src/VRFConsumerBaseV2.sol";
 
 contract VRFConsumerV2 is VRFConsumerBaseV2 {
 
   VRFCoordinatorV2Interface COORDINATOR;
 
-  // The proving key hash key associated with the public key
-  bytes32 keyHash = 0x103c831dde18151eb1eb49d831c44d57cc98ea8d8f4f12f599c68989f7cebd78;
+  // The proving key hash key associated with the bls public key
+  bytes32 keyHash = 0xefa695190d528bcfb742f4bc74f637209844727c71bcadf1e175aee94ded9d8e;
 
   // Your subscription ID.
-  uint64 s_subscriptionId;
+  uint64 public s_subscriptionId;
 
   // PlatON Devnet coordinator.
-  address vrfCoordinator = 0xAFc3fAb71B871E9cf3146c95d83B219dd5E7DD96;
+  address vrfCoordinator = 0x3fB03626eDB28320cdD92656f1814b425D69d595;
 
   // A reasonable default is 2000000, but this value could be different
   // on other networks.
@@ -27,8 +27,7 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
   uint256 public s_requestId;
   address s_owner;
 
-  uint256 public s_last_randomWords;
-  uint256 public s_length_randomWords;
+  uint256[] public s_randomWords;
 
   constructor() VRFConsumerBaseV2(vrfCoordinator) {
     COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
@@ -52,8 +51,7 @@ contract VRFConsumerV2 is VRFConsumerBaseV2 {
     uint256, /* requestId */
     uint256[] memory randomWords
   ) internal override {
-    s_length_randomWords = randomWords.length;
-    s_last_randomWords = randomWords[s_length_randomWords-1];
+    s_randomWords = randomWords;
   }
 
   // Create a new subscription when the contract is initially deployed.
