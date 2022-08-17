@@ -120,13 +120,13 @@ contract VRFCoordinatorV2_upgrade is
   Config private s_config;
 
   // Premium set for each VRF service
-  uint32 private s_config_premiumFee;
+  uint256 private s_config_premiumFee;
   
   event ConfigSet(
     uint16 minimumRequestConfirmations,
     uint32 maxGasLimit,
     uint32 gasAfterPaymentCalculation,
-    uint32 premiumFee
+    uint256 premiumFee
   );
 
   function initialize() public initializer {
@@ -190,7 +190,7 @@ contract VRFCoordinatorV2_upgrade is
     uint16 minimumRequestConfirmations,
     uint32 maxGasLimit,
     uint32 gasAfterPaymentCalculation,
-    uint32 premiumFee
+    uint256 premiumFee
   ) external onlyOwner {
     if (minimumRequestConfirmations > MAX_REQUEST_CONFIRMATIONS) {
       revert InvalidRequestConfirmations(
@@ -218,7 +218,7 @@ contract VRFCoordinatorV2_upgrade is
       uint16 minimumRequestConfirmations,
       uint32 maxGasLimit,
       uint32 gasAfterPaymentCalculation,
-      uint32 gasForPremium
+      uint256 premiumFee
     )
   {
     return (
@@ -474,12 +474,13 @@ contract VRFCoordinatorV2_upgrade is
     uint256 premiumFee
   ) internal view returns (uint96) {
     uint256 paymentNoFee = weiPerUnitGas * (gasAfterPaymentCalculation + startGas - gasleft());
-    return uint96(paymentNoFee) + uint96(premiumFee);
+    uint256 fee = 1e12 * premiumFee;
+    return uint96(paymentNoFee) + uint96(fee);
   }
 
   // Get Oracle earned LAT
-  function getOracleBalance() external view returns (uint96) {
-    return s_withdrawableTokens[msg.sender];
+  function getOracleBalance(address oracle) external view returns (uint96) {
+    return s_withdrawableTokens[oracle];
   }
 
   /*
