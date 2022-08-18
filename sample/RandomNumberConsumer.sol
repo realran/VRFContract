@@ -30,7 +30,7 @@ contract RandomNumberConsumer is VRFConsumerBaseV2 {
 
  // A reasonable default is 2000000, but it depends on the number of requested values that 
  // you want sent to the fulfillRandomWords() function.
- uint32 callbackGasLimit = 200000;
+ uint32 callbackGasLimit = 2000000;
 
  // The default is 3, but you can set this higher.
  uint16 requestConfirmations = 3;
