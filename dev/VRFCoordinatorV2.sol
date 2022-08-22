@@ -118,11 +118,15 @@ contract VRFCoordinatorV2 is
     uint32 gasAfterPaymentCalculation;
   }
   Config private s_config;
+
+  // Premium set for each VRF service
+  uint256 private s_config_premiumFee;
   
   event ConfigSet(
     uint16 minimumRequestConfirmations,
     uint32 maxGasLimit,
-    uint32 gasAfterPaymentCalculation
+    uint32 gasAfterPaymentCalculation,
+    uint256 premiumFee
   );
 
   function initialize() public initializer {
@@ -185,7 +189,8 @@ contract VRFCoordinatorV2 is
   function setConfig(
     uint16 minimumRequestConfirmations,
     uint32 maxGasLimit,
-    uint32 gasAfterPaymentCalculation
+    uint32 gasAfterPaymentCalculation,
+    uint256 premiumFee
   ) external onlyOwner {
     if (minimumRequestConfirmations > MAX_REQUEST_CONFIRMATIONS) {
       revert InvalidRequestConfirmations(
@@ -200,23 +205,27 @@ contract VRFCoordinatorV2 is
       gasAfterPaymentCalculation: gasAfterPaymentCalculation,
       reentrancyLock: false
     });
+    s_config_premiumFee = premiumFee;
     emit ConfigSet(
       minimumRequestConfirmations,
       maxGasLimit,
-      gasAfterPaymentCalculation
+      gasAfterPaymentCalculation,
+      premiumFee
     );
   }
 
   function getConfig() external view returns (
       uint16 minimumRequestConfirmations,
       uint32 maxGasLimit,
-      uint32 gasAfterPaymentCalculation
+      uint32 gasAfterPaymentCalculation,
+      uint256 premiumFee
     )
   {
     return (
       s_config.minimumRequestConfirmations,
       s_config.maxGasLimit,
-      s_config.gasAfterPaymentCalculation
+      s_config.gasAfterPaymentCalculation,
+      s_config_premiumFee
     );
   }
 
@@ -406,7 +415,8 @@ contract VRFCoordinatorV2 is
     uint96 payment = calculatePaymentAmount(
       startGas,
       s_config.gasAfterPaymentCalculation,
-      tx.gasprice
+      tx.gasprice,
+      s_config_premiumFee
     );
     if (s_subscriptions[rc.subId].balance < payment) {
       revert InsufficientBalance();
@@ -460,14 +470,21 @@ contract VRFCoordinatorV2 is
   function calculatePaymentAmount(
     uint256 startGas,
     uint256 gasAfterPaymentCalculation,
-    uint256 weiPerUnitGas
+    uint256 weiPerUnitGas,
+    uint256 premiumFee
   ) internal view returns (uint96) {
     uint256 paymentNoFee = weiPerUnitGas * (gasAfterPaymentCalculation + startGas - gasleft());
-    return uint96(paymentNoFee);
+    uint256 fee = 1e12 * premiumFee;
+    return uint96(paymentNoFee) + uint96(fee);
+  }
+
+  // Get Oracle earned LAT
+  function getOracleBalance(address oracle) external view returns (uint96) {
+    return s_withdrawableTokens[oracle];
   }
 
   /*
-   * @notice Oracle withdraw LINK earned through fulfilling requests
+   * @notice Oracle withdraw LAT earned through fulfilling requests
    * @param recipient where to send the funds
    * @param amount amount to withdraw
    */
